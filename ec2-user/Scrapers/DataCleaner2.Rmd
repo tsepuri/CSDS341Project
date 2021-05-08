@@ -1,0 +1,53 @@
+---
+title: "Combining Data"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Prep Company Frame
+```{r}
+library(tidyverse)
+data1 <- read.csv("~/Downloads/wikipediaScrape2.csv",stringsAsFactors = FALSE)
+data2 <- read.csv("~/Downloads/financials.csv",stringsAsFactors = FALSE)
+data3 <- read.csv("~/Downloads/sp500Tickers_names.csv",stringsAsFactors = FALSE)
+
+#Clean Up Data2
+data1
+data2Clean <- data2 %>% group_by(tic) %>% slice(which.max(datadate)) %>% select(tic, mkvaltq)
+total <- inner_join(inner_join(data1, data3, by=c("Symbol")),data2Clean,by=c("Symbol"="tic"))
+total <-total[!duplicated(total$Symbol), ]
+total <- subset(total, select = -c(Name.y))
+colnames(total) <- c("Ticker", "Name","Description","Sector","MarketValue")
+write.csv(total, "companies.csv", row.names=FALSE)
+
+```
+
+## Prep Securities Frame
+```{r}
+data1 <- read.csv("~/Downloads/betas.csv",stringsAsFactors = FALSE)
+data2 <- read.csv("~/Downloads/prices_volume.csv",stringsAsFactors = FALSE)
+cleaned <- inner_join(data1, data2, by=c("TICKER","DATE"="date"))
+cleaned <- select(cleaned,TICKER,DATE,PRC,VOL,b_mkt)
+colnames(cleaned) <- c("Ticker","Date","Price","Volume","Beta")
+write.csv(cleaned, "securities.csv", row.names=FALSE)
+
+
+```
+
+## Financials Frame
+```{r}
+library(tidyverse)
+data1 <- read.csv("~/Downloads/financials2.csv",stringsAsFactors = FALSE)
+data1 <- select(data1, tic,cshoq, datacqtr, atq, teqq, ltq, revtq, cogsy, oibdpq, niq, epspiq, dvpq, oancfy, capxy)
+data1$FreeCashFlow <- data1$oancfy - data1$capxy
+data1 <- subset(data1, select = -c(oancfy, capxy))
+data1 <- cbind(data1, data.frame(str_split_fixed(data1$datacqtr, "Q", 2),stringsAsFactors = FALSE))
+data1 <- subset(data1, select = -c(datacqtr))
+data1$dvpq <- data1$dvpq/100
+colnames(data1) <- c("Ticker","Shares Outstanding", "TotalAssets", "TotalEquity", "TotalLiabilities","Revenue","CostOfGoodsSold","EBITDA","NetIncome","EarningsPerShare","Dividends","FreeCashFlow","Year","Quarter")
+write.csv(data1, "financials3.csv", row.names=FALSE)
+```
+

@@ -1,0 +1,104 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+
+```{r}
+install.packages("tidyverse")
+install.packages("readxl")
+library(tidyverse)
+library(readxl)
+concat <- read_excel("/Users/eliabboud/Desktop/Downloads\ Copy/Cum/BoardMembersCum.xlsx", sheet = 1,col_names = FALSE)
+for(i in 2:500)
+concat <- rbind(concat, read_excel("/Users/eliabboud/Desktop/Downloads\ Copy/Cum/BoardMembersCum.xlsx", sheet = i,col_names = FALSE))
+concatClean <- filter(concat, ...1 !="#N/A N/A")
+
+
+concat2 <- read_excel("/Users/eliabboud/Desktop/Downloads\ Copy/Cum/ExecOfficersCum.xlsx", sheet = 1,col_names = FALSE)
+for(i in 2:500)
+concat2 <- rbind(concat2, read_excel("/Users/eliabboud/Desktop/Downloads\ Copy/Cum/ExecOfficersCum.xlsx", sheet = i,col_names = FALSE))
+colnames(concat2) <- c("Name","temp")
+library(stringr)
+split <- str_split_fixed(concat2$Name, ",", 2)
+concat2$Name <- split[,1]
+concat2$Ticker <- concat2$temp
+concat2$temp <- split[,2]
+
+
+colnames(concat2) <- c("Name","Position","Ticker")
+new <- data.frame(cbind(concatClean$...1,concatClean$...3),concatClean$...5,stringsAsFactors = FALSE)
+colnames(new) <- c("Name","Position","Ticker")
+new<- concat2
+
+
+names <- new$Name
+new$Name <- sapply(names, function(x){return(str_split_fixed(x,' "',2)[1])})
+
+
+colnames(new) <- c("name","role","ticker")
+write.csv(new,"Mangement3.csv",row.names = FALSE)
+```
+
+
+```{r}
+library(tidyverse)
+setwd("~/Downloads")
+holdings <- read.csv("2021Q1HoldingsData.csv",colClasses = "character")
+filings <- read.csv("2021Q1Filings.csv",colClasses = "character")
+maps <- read.csv("cik_cusip_mapping.csv",colClasses = "character")
+tickers <- read.csv("tickers.csv",colClasses = "character")
+subsetDf <- subset(holdings, select = c(cusip, cik_holding, value,shrsOrPrnAmt))
+
+subsetDf$temp <- sapply(subsetDf$shrsOrPrnAmt, FUN=function(x){return(substring(x,nchar(x)-1,nchar(x)))})
+subsetDf <- filter(subsetDf,temp=="SH")
+subsetDf$shares <- sapply(subsetDf$shrsOrPrnAmt, FUN=function(x){return(substring(x,1,nchar(x)-2))})
+subsetDf$shares  <- as.numeric(subsetDf$shares )
+subsetDf2 <- subset(filings, select = c(cik,name))
+subsetDf3 <- unique(subset(maps, select = c(cusip,tic)))
+holdings <- inner_join(inner_join(subsetDf, subsetDf2, by=c("cik_holding"="cik")),subsetDf3, by="cusip")
+
+holdings <- subset(holdings, select = c(tic, name,shares, value))
+holdings$value<-as.numeric(holdings$value)
+colnames(holdings)<-c("Ticker","InstitutionalOwner","Shares","Value")
+holdingFinal <- inner_join(holdings, tickers)
+write.csv(holdingFinal,"Ownership.csv",row.names = FALSE)
+
+insiderTrading <- read.csv("comprehensiveTransactions.csv",colClasses = "character")
+subsetDf3 <- unique(subset(maps, select = c(cik,tic)))
+subsetDf3$cik <- as.numeric(subsetDf3$cik)
+insiderTrading$firm.cik <- as.numeric(insiderTrading$firm.cik)
+insiderTrading <- inner_join(insiderTrading, subsetDf3, c("firm.cik"="cik"))
+insiderTrading <- subset(insiderTrading, select = c(tic, Acquistion.or.Disposition, Reporting.Owner, Transaction.Date,Transaction.Type, Number.of.Securities.Transacted))
+library(stringr)
+split <- str_split_fixed(insiderTrading$Transaction.Type, "-", 2)
+insiderTrading$Transaction.Type <- split[,2]
+insiderTrading$Acquistion.or.Disposition<-as.numeric(as.factor(insiderTrading$Acquistion.or.Disposition))
+insiderTrading <- filter(insiderTrading, Acquistion.or.Disposition!=1)
+insiderTrading$Acquistion.or.Disposition <- insiderTrading$Acquistion.or.Disposition-2
+colnames(insiderTrading)<- c("Ticker","Disposition","Insider","Transaction Date","Transaction Type","Securities Transacted")
+inner_join(insiderTrading, tickers)
+write.csv(insiderTrading,"InsiderTrades.csv",row.names = FALSE)
+```
+
+```{r}
+library(tidyverse)
+data <- read.csv("dataa.csv")
+data <- subset(data, select = -c(PERMNO))
+data$PRC <- abs(data$PRC)
+filter(data,PRC<0)
+colnames(data) = c("date","ticker", "price", "volume", "priceAdjustment")
+write.csv(data,"Securities.csv",row.names = FALSE)
+
+```
+
+```{r}
+library(stringr)
+data <- read.csv("~/Downloads/companies.csv", stringsAsFactors = FALSE)
+data$Description <- sapply(data$Description, function(x){str_replace_all(x,'"',"'")})
+colnames(data) <- c("ticker","name","description","sector","market_value")
+write.csv(data,"companies2.csv",row.names = FALSE)
+
+```
+
+

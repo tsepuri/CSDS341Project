@@ -1,0 +1,36 @@
+
+
+```{r cars}
+library(tidyverse)
+library(rjson)
+library(rvest)
+
+#escape apostrophes
+clean <- function(string){
+  string <- gsub("  ", " ", string)
+  string <- gsub("[\r\n]", " ", string)
+  string <- gsub("\\s*\\([^\\)]+\\)","",string)
+  string <- gsub("\\.(?=[A-Za-z])", ". ", x, perl = TRUE)
+  if(string==""){
+    string <- "ERROR HERE"
+  }
+  return(string)
+}
+
+companyNames <- read.csv("~/Downloads/IndexForWikipediaScraping.csv",stringsAsFactors = FALSE,header = FALSE)
+for(i in 1:NROW(companyNames)){
+ link <- URLencode(paste("https://en.wikipedia.org/w/api.php?format=json&action=query&prop=extracts&exintro&explaintext&redirects=1&titles=",companyNames[i,1], sep=""))
+  webpage <- read_html(link, options = "RECOVER")
+  text <- webpage %>%  html_text()       
+  frame <- data.frame(fromJSON(text),stringsAsFactors = FALSE)
+  description <- frame[,NCOL(frame)]
+  companyNames[i,2] <- clean(description)
+}
+
+
+
+
+write.csv(companyNames, "~/Downloads/wikipediaScrape.csv", row.names = FALSE)
+  
+```
+
