@@ -1,0 +1,2 @@
+(window["webpackJsonp"]=window["webpackJsonp"]||[]).push([["about"],{f820:function(e,c,o){"use strict";o.r(c);var t=o("7a23");const n={class:"about"},a=Object(t["createVNode"])("h4",null,"CWRU FINANCE",-1),r=Object(t["createVNode"])("h4",null,"Developed by Eli Abboud, Tarun Sepuri and Jacob Warmath",-1);function u(e,c){return Object(t["openBlock"])(),Object(t["createBlock"])("div",n,[a,r])}const b={};b.render=u;c["default"]=b}}]);
+//# sourceMappingURL=about.cdaab758.js.map
